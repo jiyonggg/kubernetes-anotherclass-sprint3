@@ -8,9 +8,9 @@ pipeline {
 
     environment {
         // 본인의 DockerHub username로 수정 해주세요.
-        DOCKERHUB_USERNAME = '1pro'
+        DOCKERHUB_USERNAME = 'jiyonggg'
         // 배포용 Github - Sprint3를 Fork 후 Username 변경 해주세요.
-        RELEASE_GITHUB_URL = 'https://github.com/k8s-1pro/kubernetes-anotherclass-sprint3.git'
+        RELEASE_GITHUB_URL = 'https://github.com/jiyonggg/kubernetes-anotherclass-sprint3.git'
         // App용 Github - Api-Tester App 소스코드를 Fork 후 Username 변경 해주세요.
         APP_GITHUB_URL = 'https://github.com/k8s-1pro/kubernetes-anotherclass-api-tester.git'
 
@@ -57,19 +57,33 @@ pipeline {
             steps {
                 // DockerHub로 이미지 업로드
                 script{
+
+					withCredentials([usernamePassword(credentialsId: 'docker_password', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                        sh "echo " + '${PASSWORD}' + " | docker login -u " + '${USERNAME}' + " --password-stdin"
+                    }
                     sh "docker push ${DOCKERHUB_USERNAME}/api-tester:${APP_VERSION}"
+
+					sh "docker rmi ${DOCKERHUB_USERNAME}/api-tester:${APP_VERSION}"
                 }
             }
+
+			post {
+				always {
+					sh "docker logout"
+				}
+			}
         }
 
         stage('쿠버네티스 배포') {
             steps {
-                // K8S 배포
-                sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/namespace.yaml"
-                sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/configmap.yaml"
-                sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/secret.yaml"
-                sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/service.yaml"
-                sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/deployment.yaml"
+				withCredentials([file(credentialsId: 'k8s_master_config', variable: 'KUBECONFIG')]) {
+                	// K8S 배포
+                	sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/namespace.yaml"
+                	sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/configmap.yaml"
+                	sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/secret.yaml"
+                	sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/service.yaml"
+                	sh "kubectl apply -f ./${CLASS_NUM}/deploy/k8s/deployment.yaml"
+				}
             }
         }
     }
