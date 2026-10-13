@@ -64,7 +64,7 @@ pipeline {
 					
                     sh "docker push ${DOCKERHUB_USERNAME}/api-tester:${APP_VERSION}"
 
-					sh "docker rmi ${DOCKERHUB_USERNAME}api-tester:${APP_VERSION}"
+					sh "docker rmi ${DOCKERHUB_USERNAME}/api-tester:${APP_VERSION}"
                 }
             }
 
